@@ -11,7 +11,7 @@ const Layout = ({ children, title, keywords, description }) => {
                 <link rel="icon" href="./favicon.ico" />
             </Head>
             <Header />
-
+            <Search />
             <main className="container mx-auto my-7">{children}</main>
         </div>
     )
