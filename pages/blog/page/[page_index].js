@@ -1,15 +1,12 @@
-
 import fs from 'fs'
 import path from 'path'
-import Link from 'next/link'
-import Layout from "../../../components/Layout"
-import Header from "../../../components/Header"
-import Post from '../../../components/Post'
-import matter from 'gray-matter'
-import { sortByDate } from '../../../utils'
+import Layout from "@/components/Layout"
+import Post from '@/components/Post'
+import Pagination from '@/components/Pagination'
+import { POSTS_PER_PAGE } from '@/config/index'
+import {getPosts} from '@/lib/posts'
 
-
-export default function BlogPage({ posts }) {
+export default function BlogPage({ posts, numPages, currentPage }) {
 
   return (
     <Layout>
@@ -19,26 +16,42 @@ export default function BlogPage({ posts }) {
           return <Post key={index} post={post} />
         })}
       </div>
-
+      <Pagination currentPage={currentPage} numPages={numPages} />
     </Layout>
   )
 }
 
-export async function getStaticProps() {
+
+export async function getStaticPaths() {
   const files = fs.readdirSync(path.join('posts'))
-  const posts = files.map(filename => {
-    const slug = filename.replace('.md', '')
-    const markDownWithMeta = fs.readFileSync(path.join('posts', filename), 'utf-8')
-    const { data: frontmatter } = matter(markDownWithMeta)
-    return {
-      slug,
-      frontmatter
-    }
-  })
+  const numPages = Math.ceil(files.length / POSTS_PER_PAGE)
+  let paths = []
+  for(let i = 1; i <= numPages; i++ ) {
+    paths.push({
+      params: {page_index: i.toString()}
+    })
+  }
 
   return {
+    paths,
+    fallback: false
+  }
+}
+
+export async function getStaticProps({params}) {
+  const page = parseInt((params && params.page_index) || 1)
+  const files = fs.readdirSync(path.join('posts'))
+  const posts = getPosts()
+
+  const numPages = Math.ceil(files.length / POSTS_PER_PAGE)
+  const pageIndex = page - 1 
+  const orderedPosts = posts
+  .slice(pageIndex * POSTS_PER_PAGE, (pageIndex + 1) * POSTS_PER_PAGE)
+  return {
     props: {
-      posts: posts.sort(sortByDate)
+      posts: orderedPosts,
+      numPages,
+      currentPage: page
     }
   }
 }
